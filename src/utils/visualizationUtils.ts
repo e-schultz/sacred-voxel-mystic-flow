@@ -1,5 +1,5 @@
-
 import p5 from 'p5';
+import { Hexagon, Triangle } from '@/types/visualization';
 
 export function drawCenterCircle(p: p5, time: number, triangleSize: number, colors: any, bassEnergy: number, midEnergy: number) {
   p.push();
