@@ -1,9 +1,9 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import * as Tone from 'tone';
-import { Play, Pause, Music } from 'lucide-react';
+import { Play, Pause, Music, ChevronDown, ChevronUp } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 
 interface StepSequencerProps {
   onAudioAnalysis: (data: Uint8Array) => void;
@@ -17,6 +17,7 @@ interface Instrument {
 const StepSequencer: React.FC<StepSequencerProps> = ({ onAudioAnalysis }) => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [bpm, setBpm] = useState(120);
+  const [isOpen, setIsOpen] = useState(false);
   
   // Define the initial pattern first
   const initialPattern = [
@@ -228,57 +229,73 @@ const StepSequencer: React.FC<StepSequencerProps> = ({ onAudioAnalysis }) => {
   const instrumentNames = ["Kick", "Hi-hat", "Perc", "Bass"];
 
   return (
-    <div className="fixed bottom-0 left-0 z-20 w-full bg-black/70 border-t border-white/20 backdrop-blur-md p-4">
-      <div className="max-w-3xl mx-auto">
-        <div className="flex items-center justify-between mb-4">
-          <Button 
-            variant="destructive" 
-            size="icon"
-            className="w-16 h-16 rounded-full border-2 border-white/50 shadow-lg shadow-red-500/20"
-            onClick={togglePlay}
-          >
-            {isPlaying ? 
-              <Pause className="w-8 h-8" /> : 
-              <Play className="w-8 h-8 ml-1" />
-            }
-          </Button>
-          
-          <div className="flex items-center space-x-2">
-            <Music className="w-4 h-4 text-white/50" />
-            <Slider
-              value={[bpm]}
-              min={60}
-              max={180}
-              step={1}
-              className="w-36"
-              onValueChange={(value) => setBpm(value[0])}
-            />
-            <span className="text-xs text-white/70 w-12">{bpm} BPM</span>
-          </div>
+    <div className="fixed bottom-0 left-0 z-20 w-full bg-black/80 border-t border-white/10 backdrop-blur-md">
+      <Collapsible open={isOpen} onOpenChange={setIsOpen}>
+        <div className="flex justify-center border-b border-white/10">
+          <CollapsibleTrigger asChild>
+            <Button 
+              variant="ghost" 
+              size="sm"
+              className="w-20 h-7 px-2 rounded-b-none rounded-t-none border-x border-t-0 border-white/10"
+            >
+              {isOpen ? <ChevronDown className="w-4 h-4" /> : <ChevronUp className="w-4 h-4" />}
+            </Button>
+          </CollapsibleTrigger>
         </div>
-
-        <div className="grid grid-rows-4 gap-1 mb-1">
-          {instrumentNames.map((name, instrumentIndex) => (
-            <div key={name} className="flex items-center">
-              <div className="w-10 text-xs text-white/50 mr-2">{name}</div>
-              <div className="grid grid-cols-16 gap-1 flex-grow">
-                {Array.from({ length: 16 }, (_, stepIndex) => (
-                  <button
-                    key={stepIndex}
-                    className={`
-                      w-full aspect-square rounded-sm border border-white/20
-                      ${steps[instrumentIndex][stepIndex] ? 'bg-primary' : 'bg-black/40'} 
-                      ${currentStep === stepIndex ? 'ring-1 ring-white' : ''}
-                      hover:bg-white/30 transition-colors
-                    `}
-                    onClick={() => toggleStep(instrumentIndex, stepIndex)}
-                  />
-                ))}
+        
+        <CollapsibleContent>
+          <div className="p-4 max-w-3xl mx-auto">
+            <div className="flex items-center justify-between mb-4">
+              <Button 
+                variant="ghost" 
+                size="icon"
+                className="w-12 h-12 rounded-full border-2 border-white/30 bg-black/40 hover:bg-white/10"
+                onClick={togglePlay}
+              >
+                {isPlaying ? 
+                  <Pause className="w-6 h-6 text-white/90" /> : 
+                  <Play className="w-6 h-6 ml-0.5 text-white/90" />
+                }
+              </Button>
+              
+              <div className="flex items-center space-x-2">
+                <Music className="w-4 h-4 text-white/50" />
+                <Slider
+                  value={[bpm]}
+                  min={60}
+                  max={180}
+                  step={1}
+                  className="w-36"
+                  onValueChange={(value) => setBpm(value[0])}
+                />
+                <span className="text-xs text-white/70 w-12">{bpm} BPM</span>
               </div>
             </div>
-          ))}
-        </div>
-      </div>
+
+            <div className="grid grid-rows-4 gap-1 mb-1">
+              {instrumentNames.map((name, instrumentIndex) => (
+                <div key={name} className="flex items-center">
+                  <div className="w-10 text-xs text-white/50 mr-2">{name}</div>
+                  <div className="grid grid-cols-16 gap-1 flex-grow">
+                    {Array.from({ length: 16 }, (_, stepIndex) => (
+                      <button
+                        key={stepIndex}
+                        className={`
+                          w-full aspect-square rounded-sm border border-white/20
+                          ${steps[instrumentIndex][stepIndex] ? 'bg-blue-600' : 'bg-black/40'} 
+                          ${currentStep === stepIndex ? 'ring-1 ring-white' : ''}
+                          hover:bg-white/30 transition-colors
+                        `}
+                        onClick={() => toggleStep(instrumentIndex, stepIndex)}
+                      />
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </CollapsibleContent>
+      </Collapsible>
     </div>
   );
 };
