@@ -1,6 +1,7 @@
 
 import React, { useEffect, useRef, useState } from 'react';
 import p5 from 'p5';
+import StepSequencer from './StepSequencer';
 
 const messages = [
   "THE ONLY WAY OUT IS THROUGH",
@@ -37,6 +38,12 @@ const SacredGeometryVisualizer: React.FC = () => {
   const canvasRef = useRef<HTMLDivElement>(null);
   const [currentMessage, setCurrentMessage] = useState(messages[0]);
   const messageIndexRef = useRef(0);
+  const audioDataRef = useRef<Uint8Array>(new Uint8Array(128).fill(0));
+  
+  // Audio reactivity effects
+  const handleAudioAnalysis = (data: Uint8Array) => {
+    audioDataRef.current = data;
+  };
   
   useEffect(() => {
     if (!canvasRef.current) return;
@@ -95,8 +102,17 @@ const SacredGeometryVisualizer: React.FC = () => {
       p.draw = () => {
         p.background(colors.bg);
         
+        // Get audio data for visualization
+        const audioData = audioDataRef.current;
+        
+        // Calculate audio energy for different frequency bands
+        const bassEnergy = getAverageEnergy(audioData, 0, 10);
+        const midEnergy = getAverageEnergy(audioData, 10, 30);
+        const highEnergy = getAverageEnergy(audioData, 30, 60);
+        const fullEnergy = getAverageEnergy(audioData, 0, 60);
+        
         // Global lighting
-        p.ambientLight(40, 40, 60);
+        p.ambientLight(40 + highEnergy * 30, 40 + midEnergy * 20, 60 + bassEnergy * 40);
         p.pointLight(255, 255, 255, 0, 0, 300);
         
         // Update time and message
@@ -109,33 +125,33 @@ const SacredGeometryVisualizer: React.FC = () => {
           setCurrentMessage(messages[messageIndexRef.current]);
         }
         
-        // Camera movement
-        let camX = p.sin(time * 0.2) * 100;
-        let camY = p.cos(time * 0.1) * 50;
+        // Camera movement - affected by bass
+        let camX = p.sin(time * 0.2) * 100 + bassEnergy * 50;
+        let camY = p.cos(time * 0.1) * 50 + midEnergy * 30;
         p.camera(camX, camY, 500, 0, 0, 0, 0, 1, 0);
         
         // Center geometry
         p.push();
         p.translate(0, 0, -200);
-        p.rotateX(p.sin(time * 0.1) * 0.1);
-        p.rotateY(time * 0.1);
+        p.rotateX(p.sin(time * 0.1) * 0.1 + bassEnergy * 0.05);
+        p.rotateY(time * 0.1 + midEnergy * 0.1);
         
         // Draw center circle
-        drawCenterCircle(p, time, triangleSize, colors);
+        drawCenterCircle(p, time, triangleSize, colors, bassEnergy, midEnergy);
         
         // Draw triangular pattern
-        drawTriangularPattern(p, time, triangleGrid, colors);
+        drawTriangularPattern(p, time, triangleGrid, colors, midEnergy);
         
         // Draw radial lines
-        drawRadialLines(p, time, colors);
+        drawRadialLines(p, time, colors, highEnergy);
         
         p.pop();
         
         // Draw hexagon grid
-        drawHexagonGrid(p, time, hexGrid, colors);
+        drawHexagonGrid(p, time, hexGrid, colors, bassEnergy, midEnergy);
         
         // Overlay effect
-        drawOverlay(p, colors);
+        drawOverlay(p, colors, fullEnergy);
       };
 
       p.mousePressed = () => {
@@ -149,6 +165,16 @@ const SacredGeometryVisualizer: React.FC = () => {
       p.windowResized = () => {
         p.resizeCanvas(window.innerWidth, window.innerHeight);
       };
+      
+      // Helper function to calculate average energy in a frequency range
+      function getAverageEnergy(data: Uint8Array, startBin: number, endBin: number): number {
+        let sum = 0;
+        for (let i = startBin; i < endBin && i < data.length; i++) {
+          sum += data[i];
+        }
+        // Normalize between 0 and 1
+        return sum / ((endBin - startBin) * 255);
+      }
     };
 
     // Start the sketch
@@ -164,32 +190,34 @@ const SacredGeometryVisualizer: React.FC = () => {
     <div className="fixed inset-0 flex flex-col items-center justify-center">
       <div ref={canvasRef} className="absolute inset-0 z-0" />
       
-      <div className="z-10 fixed bottom-8 left-0 w-full text-center pointer-events-none">
+      <div className="z-10 fixed bottom-20 left-0 w-full text-center pointer-events-none">
         <div className="inline-block p-4 bg-black/50 border border-white/30 uppercase tracking-wider animate-pulse-slow">
           <span className="font-mono text-white/70 text-lg">{currentMessage}</span>
         </div>
       </div>
+      
+      <StepSequencer onAudioAnalysis={handleAudioAnalysis} />
     </div>
   );
 };
 
-// Helper functions for drawing
-function drawCenterCircle(p: p5, time: number, triangleSize: number, colors: any) {
+// Helper functions for drawing, modified to use audio reactivity
+function drawCenterCircle(p: p5, time: number, triangleSize: number, colors: any, bassEnergy: number, midEnergy: number) {
   p.push();
   p.rotateX(p.PI/2);
   p.noFill();
-  p.stroke(colors.light[0], colors.light[1], colors.light[2], 100);
-  p.strokeWeight(2);
-  p.circle(0, 0, triangleSize * 3);
+  p.stroke(colors.light[0], colors.light[1], colors.light[2], 100 + midEnergy * 100);
+  p.strokeWeight(2 + bassEnergy * 3);
+  p.circle(0, 0, triangleSize * 3 * (1 + bassEnergy * 0.5));
   
   p.stroke(colors.primary[0], colors.primary[1], colors.primary[2], 150);
-  p.strokeWeight(1);
-  p.circle(0, 0, triangleSize * 3.2);
+  p.strokeWeight(1 + midEnergy * 2);
+  p.circle(0, 0, triangleSize * 3.2 * (1 + midEnergy * 0.3));
   
-  // Inner pulse circle
-  let pulseSize = triangleSize * 2 + p.sin(time * 3) * 20;
+  // Inner pulse circle - now reacts to bass
+  let pulseSize = triangleSize * 2 + p.sin(time * 3) * 20 + bassEnergy * 100;
   p.stroke(colors.highlight[0], colors.highlight[1], colors.highlight[2], 200);
-  p.strokeWeight(2);
+  p.strokeWeight(2 + bassEnergy * 5);
   p.circle(0, 0, pulseSize);
   p.pop();
   
@@ -197,25 +225,25 @@ function drawCenterCircle(p: p5, time: number, triangleSize: number, colors: any
   p.push();
   p.fill(colors.highlight);
   p.noStroke();
-  p.sphere(5);
+  p.sphere(5 + bassEnergy * 15);
   p.pop();
 }
 
-function drawTriangularPattern(p: p5, time: number, triangleGrid: Triangle[], colors: any) {
+function drawTriangularPattern(p: p5, time: number, triangleGrid: Triangle[], colors: any, midEnergy: number) {
   for (let tri of triangleGrid) {
     p.push();
-    // Position and rotate triangles around center
-    p.rotateZ(tri.angle + time * tri.rotSpeed);
-    p.translate(0, tri.distance, 0);
+    // Position and rotate triangles around center - affected by mid frequencies
+    p.rotateZ(tri.angle + time * tri.rotSpeed + midEnergy * 0.2);
+    p.translate(0, tri.distance * (1 + midEnergy * 0.3), 0);
     p.rotateX(p.PI/2);
     
-    // Pulsing effect
-    let pulseAmount = p.sin(time * 2 + tri.phase) * 0.2 + 0.8;
+    // Pulsing effect - enhanced by audio
+    let pulseAmount = p.sin(time * 2 + tri.phase) * 0.2 + 0.8 + midEnergy * 0.3;
     
     // Draw filled triangle
-    p.fill(colors.primary[0], colors.primary[1], colors.primary[2], 40);
+    p.fill(colors.primary[0], colors.primary[1], colors.primary[2], 40 + midEnergy * 60);
     p.stroke(colors.highlight[0], colors.highlight[1], colors.highlight[2], 160);
-    p.strokeWeight(2);
+    p.strokeWeight(2 + midEnergy * 3);
     
     p.beginShape();
     let triH = tri.size * p.sqrt(3) / 2;
@@ -225,8 +253,8 @@ function drawTriangularPattern(p: p5, time: number, triangleGrid: Triangle[], co
     p.endShape(p.CLOSE);
     
     // Inner triangle
-    p.stroke(colors.light[0], colors.light[1], colors.light[2], 100);
-    p.strokeWeight(1);
+    p.stroke(colors.light[0], colors.light[1], colors.light[2], 100 + midEnergy * 100);
+    p.strokeWeight(1 + midEnergy * 2);
     
     p.beginShape();
     let innerScale = 0.7;
@@ -239,72 +267,82 @@ function drawTriangularPattern(p: p5, time: number, triangleGrid: Triangle[], co
   }
 }
 
-function drawRadialLines(p: p5, time: number, colors: any) {
-  // Draw radial lines emanating from center
+function drawRadialLines(p: p5, time: number, colors: any, highEnergy: number) {
+  // Draw radial lines emanating from center - affected by high frequencies
   p.push();
-  p.stroke(colors.secondary[0], colors.secondary[1], colors.secondary[2], 100);
-  p.strokeWeight(1);
+  p.stroke(colors.secondary[0], colors.secondary[1], colors.secondary[2], 100 + highEnergy * 100);
+  p.strokeWeight(1 + highEnergy * 2);
   
   for (let i = 0; i < 24; i++) {
     let angle = p.TWO_PI * i / 24;
-    let length = 250 + p.sin(time + i * 0.5) * 30;
+    let length = 250 + p.sin(time + i * 0.5) * 30 + highEnergy * 150;
     
     p.push();
-    p.rotateZ(angle);
+    p.rotateZ(angle + highEnergy * 0.05);
     p.line(0, 0, 0, 0, length, 0);
     p.pop();
   }
   p.pop();
 }
 
-function drawHexagonGrid(p: p5, time: number, hexGrid: Hexagon[], colors: any) {
+function drawHexagonGrid(p: p5, time: number, hexGrid: Hexagon[], colors: any, bassEnergy: number, midEnergy: number) {
   for (let hex of hexGrid) {
     p.push();
-    p.translate(hex.x, hex.y, hex.z + p.sin(time + hex.yOffset) * 50);
-    p.rotateX(time * hex.rotSpeed);
-    p.rotateY(time * hex.rotSpeed * 1.5);
+    // Position affected by bass
+    p.translate(
+      hex.x, 
+      hex.y, 
+      hex.z + p.sin(time + hex.yOffset) * 50 + bassEnergy * 200
+    );
+    // Rotation affected by audio
+    p.rotateX(time * hex.rotSpeed + bassEnergy * 0.2);
+    p.rotateY(time * hex.rotSpeed * 1.5 + midEnergy * 0.3);
     p.rotateZ(hex.phase + time * hex.rotSpeed * 0.7);
     
     // Draw hexagon
     p.stroke(hex.hue[0], hex.hue[1], hex.hue[2], 150);
-    p.strokeWeight(2);
-    p.fill(hex.hue[0], hex.hue[1], hex.hue[2], 30);
+    p.strokeWeight(2 + midEnergy * 3);
+    p.fill(hex.hue[0], hex.hue[1], hex.hue[2], 30 + bassEnergy * 50);
     
     p.beginShape();
     for (let i = 0; i < 6; i++) {
       let angle = p.TWO_PI * i / 6;
-      let px = p.cos(angle) * hex.size;
-      let py = p.sin(angle) * hex.size;
+      // Size affected by bass
+      let pxSize = hex.size * (1 + bassEnergy * 0.5);
+      let px = p.cos(angle) * pxSize;
+      let py = p.sin(angle) * pxSize;
       p.vertex(px, py, 0);
     }
     p.endShape(p.CLOSE);
     
     // Inner hexagon
     p.noFill();
-    p.stroke(colors.light[0], colors.light[1], colors.light[2], 70);
-    p.strokeWeight(1);
+    p.stroke(colors.light[0], colors.light[1], colors.light[2], 70 + midEnergy * 100);
+    p.strokeWeight(1 + midEnergy * 1.5);
     
     p.beginShape();
     for (let i = 0; i < 6; i++) {
       let angle = p.TWO_PI * i / 6;
-      let px = p.cos(angle) * (hex.size * 0.7);
-      let py = p.sin(angle) * (hex.size * 0.7);
+      let pxSize = hex.size * 0.7 * (1 + midEnergy * 0.3);
+      let px = p.cos(angle) * pxSize;
+      let py = p.sin(angle) * pxSize;
       p.vertex(px, py, 0);
     }
     p.endShape(p.CLOSE);
     
-    // Voxel effect - hexagon extrusion
-    let depth = hex.size * 0.3;
-    p.stroke(hex.hue[0], hex.hue[1], hex.hue[2], 60);
+    // Voxel effect - hexagon extrusion - affected by bass
+    let depth = hex.size * 0.3 * (1 + bassEnergy * 1);
+    p.stroke(hex.hue[0], hex.hue[1], hex.hue[2], 60 + bassEnergy * 100);
     
     for (let i = 0; i < 6; i++) {
       let angle = p.TWO_PI * i / 6;
-      let px1 = p.cos(angle) * hex.size;
-      let py1 = p.sin(angle) * hex.size;
+      let pxSize = hex.size * (1 + bassEnergy * 0.5);
+      let px1 = p.cos(angle) * pxSize;
+      let py1 = p.sin(angle) * pxSize;
       
       let nextAngle = p.TWO_PI * ((i + 1) % 6) / 6;
-      let px2 = p.cos(nextAngle) * hex.size;
-      let py2 = p.sin(nextAngle) * hex.size;
+      let px2 = p.cos(nextAngle) * pxSize;
+      let py2 = p.sin(nextAngle) * pxSize;
       
       p.line(px1, py1, 0, px1, py1, -depth);
       p.line(px1, py1, -depth, px2, py2, -depth);
@@ -314,15 +352,15 @@ function drawHexagonGrid(p: p5, time: number, hexGrid: Hexagon[], colors: any) {
   }
 }
 
-function drawOverlay(p: p5, colors: any) {
+function drawOverlay(p: p5, colors: any, fullEnergy: number) {
   p.push();
   // Reset the camera for 2D overlay
   p.camera();
   p.noStroke();
   
-  // Scan line effect
+  // Scan line effect - intensity based on full energy
   for (let y = 0; y < p.height; y += 4) {
-    p.fill(colors.light[0], colors.light[1], colors.light[2], 5);
+    p.fill(colors.light[0], colors.light[1], colors.light[2], 5 + fullEnergy * 10);
     p.rect(0, y, p.width, 1);
   }
   
@@ -336,13 +374,13 @@ function drawOverlay(p: p5, colors: any) {
     p.ellipse(p.width/2, p.height/2, size, size);
   }
   
-  // Glitch effect
-  if (p.random() > 0.97) {
+  // Glitch effect - more likely with high energy
+  if (p.random() > 0.97 - fullEnergy * 0.2) {
     let x = p.random(p.width);
     let y = p.random(p.height);
     let w = p.random(50, 150);
     let h = p.random(2, 8);
-    p.fill(colors.highlight[0], colors.highlight[1], colors.highlight[2], 100);
+    p.fill(colors.highlight[0], colors.highlight[1], colors.highlight[2], 100 + fullEnergy * 100);
     p.rect(x, y, w, h);
   }
   
