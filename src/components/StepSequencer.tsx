@@ -92,8 +92,8 @@ const StepSequencer: React.FC<StepSequencerProps> = ({ onAudioAnalysis }) => {
       setCurrentStep(step);
       
       // Play sounds for active steps
-      steps[step].forEach((isActive, instrumentIndex) => {
-        if (isActive) {
+      steps.forEach((instrumentSteps, instrumentIndex) => {
+        if (instrumentSteps[step]) {
           const instrument = instrumentsRef.current[instrumentIndex];
           
           // Different handling for different instruments
@@ -176,9 +176,10 @@ const StepSequencer: React.FC<StepSequencerProps> = ({ onAudioAnalysis }) => {
     setIsPlaying(!isPlaying);
   };
 
-  const toggleStep = (stepIndex: number, instrumentIndex: number) => {
+  const toggleStep = (instrumentIndex: number, stepIndex: number) => {
     const newSteps = [...steps];
-    newSteps[stepIndex][instrumentIndex] = !newSteps[stepIndex][instrumentIndex];
+    newSteps[instrumentIndex] = [...newSteps[instrumentIndex]]; // Create a copy of the row
+    newSteps[instrumentIndex][stepIndex] = !newSteps[instrumentIndex][stepIndex];
     setSteps(newSteps);
   };
 
@@ -221,11 +222,11 @@ const StepSequencer: React.FC<StepSequencerProps> = ({ onAudioAnalysis }) => {
                     key={stepIndex}
                     className={`
                       w-full aspect-square rounded-sm border border-white/20
-                      ${steps[stepIndex][instrumentIndex] ? 'bg-primary' : 'bg-black/40'} 
+                      ${steps[instrumentIndex][stepIndex] ? 'bg-primary' : 'bg-black/40'} 
                       ${currentStep === stepIndex ? 'ring-1 ring-white' : ''}
                       hover:bg-white/30 transition-colors
                     `}
-                    onClick={() => toggleStep(stepIndex, instrumentIndex)}
+                    onClick={() => toggleStep(instrumentIndex, stepIndex)}
                   />
                 ))}
               </div>
