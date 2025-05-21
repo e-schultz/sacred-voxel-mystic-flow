@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import * as Tone from 'tone';
 import { Play, Pause, Music } from 'lucide-react';
@@ -44,26 +45,66 @@ const StepSequencer: React.FC<StepSequencerProps> = ({ onAudioAnalysis }) => {
 
   // Initialize Tone.js
   useEffect(() => {
-    // Create instruments
+    // Create instruments with modified attack and release for Plastikman-like slower sound
     const kick = new Tone.MembraneSynth({
       volume: -10,
-      envelope: { attack: 0.001, decay: 0.2, sustain: 0 }
+      envelope: { 
+        attack: 0.02,    // Slower attack for more rounded kick
+        decay: 0.8,      // Longer decay for sustained body
+        sustain: 0.01,   // Low sustain for minimal lingering
+        release: 1.4     // Longer release for more space between kicks
+      },
+      octaves: 5,        // Deeper kick
+      pitchDecay: 0.05   // Slower pitch drop for that Plastikman sub feel
     }).toDestination();
     
     const hihat = new Tone.NoiseSynth({
-      volume: -20,
-      envelope: { attack: 0.001, decay: 0.1, sustain: 0 }
+      volume: -25,
+      noise: { 
+        type: "white"    // White noise for hi-hats
+      },
+      envelope: { 
+        attack: 0.005,   // Fast but not instant attack
+        decay: 0.2,      // Medium decay
+        sustain: 0,      // No sustain
+        release: 0.8     // Longer release for more atmosphere
+      }
     }).toDestination();
     
     const perc = new Tone.MetalSynth({
-      volume: -25,
-      envelope: { attack: 0.001, decay: 0.1, sustain: 0 }
+      volume: -30,
+      envelope: { 
+        attack: 0.1,     // Slower attack for atmospheric percussion
+        decay: 0.5,      // Longer decay
+        sustain: 0.1,    // Some sustain for ambience
+        release: 1.2     // Long release for spacious decay
+      },
+      harmonicity: 3.1,  // More harmonic complexity
+      modulationIndex: 16,
+      resonance: 1000,
+      octaves: 1.5
     }).toDestination();
     
     const bass = new Tone.MonoSynth({
-      volume: -20,
-      oscillator: { type: "square" },
-      envelope: { attack: 0.01, decay: 0.1, sustain: 0.2, release: 0.5 }
+      volume: -15,
+      oscillator: { 
+        type: "triangle"  // Softer bass tone like in Plastikman tracks
+      },
+      envelope: { 
+        attack: 0.1,      // Gradual attack for flowing bass
+        decay: 0.3,       // Medium decay
+        sustain: 0.4,     // Good sustain for flowing bass lines
+        release: 2.0      // Long release for atmospheric quality
+      },
+      filterEnvelope: {
+        attack: 0.4,      // Slow filter attack for evolving timbre
+        decay: 0.3,       // Medium filter decay
+        sustain: 0.3,     // Medium filter sustain
+        release: 2.0,     // Long filter release
+        baseFrequency: 100,
+        octaves: 2.5,     // Wide filter sweep
+        exponent: 2
+      }
     }).toDestination();
 
     // Create custom wrapper for each instrument
@@ -104,18 +145,19 @@ const StepSequencer: React.FC<StepSequencerProps> = ({ onAudioAnalysis }) => {
           // Different handling for different instruments
           switch(instrumentIndex) {
             case 0: // Kick
-              instrument.triggerAttackRelease("C1", "8n", time);
+              instrument.triggerAttackRelease("C1", "4n", time); // Longer note duration for kick
               break;
             case 1: // Hi-hat
-              instrument.triggerAttackRelease("16n", time);
+              instrument.triggerAttackRelease("8n", time); // Longer for more decay
               break;
             case 2: // Percussion
-              instrument.triggerAttackRelease("16n", time);
+              instrument.triggerAttackRelease("4n", time); // Longer for atmospheric percussion
               break;
             case 3: // Bass
-              const notes = ["C2", "G1", "A1", "F1"];
+              // Deeper notes for Plastikman-style bass
+              const notes = ["A1", "G1", "F1", "E1"];
               const note = notes[Math.floor(step / 4) % notes.length];
-              instrument.triggerAttackRelease(note, "8n", time);
+              instrument.triggerAttackRelease(note, "4n", time); // Longer bass notes for flow
               break;
           }
         }
@@ -128,7 +170,7 @@ const StepSequencer: React.FC<StepSequencerProps> = ({ onAudioAnalysis }) => {
       }
     }, Array.from({ length: 16 }, (_, i) => i), "16n");
 
-    // Start transport
+    // Start transport with lower default BPM for Plastikman-like pace
     Tone.Transport.bpm.value = bpm;
     
     return () => {
