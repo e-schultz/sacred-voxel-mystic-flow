@@ -1,4 +1,15 @@
 
+import { AudioAnalysisData } from '@/services/AudioManager';
+
+export interface ColorPalette {
+  bg: number[];
+  primary: number[];
+  secondary: number[];
+  highlight: number[];
+  dark: number[];
+  light: number[];
+}
+
 export interface Hexagon {
   x: number;
   y: number;
@@ -18,15 +29,6 @@ export interface Triangle {
   phase: number;
 }
 
-export interface ColorPalette {
-  bg: number[];
-  primary: number[];
-  secondary: number[];
-  highlight: number[];
-  dark: number[];
-  light: number[];
-}
-
 export interface SacredGeometryVisualizerProps {
-  audioData: Uint8Array;
+  // Removed audioData prop as we now use AudioManager
 }

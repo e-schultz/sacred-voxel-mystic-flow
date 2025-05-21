@@ -1,4 +1,3 @@
-
 import p5 from 'p5';
 import { Hexagon, Triangle, ColorPalette } from '../types/geometryTypes';
 
@@ -24,8 +23,7 @@ export function drawCenterCircle(p: p5, time: number, triangleSize: number, colo
   p.rotateX(p.PI/2);
   p.noFill();
   
-  // Replace modelZ with a distance calculation based on camera position
-  // We'll use a fixed distance threshold instead since modelZ isn't available
+  // Fixed the modelZ issue by using a simpler approach with fixed thresholds
   const distanceThreshold = 600;
   
   // Always draw the basic effects
@@ -177,6 +175,7 @@ export function drawHexagonGrid(p: p5, time: number, hexGrid: Hexagon[], colors:
 
 export function drawOverlay(p: p5, colors: ColorPalette, fullEnergy: number) {
   p.push();
+  
   // Reset the camera for 2D overlay effects
   p.camera();
   p.noStroke();

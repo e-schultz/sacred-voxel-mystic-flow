@@ -2,7 +2,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import * as Tone from 'tone';
 import { Pattern, Instrument } from '@/types/sequencerTypes';
-import { useToneInitializer } from './useToneInitializer';
+import AudioManager from '@/services/AudioManager';
 
 export function useSequencePlayer(
   initialPattern: Pattern,
@@ -13,7 +13,6 @@ export function useSequencePlayer(
   const [isPlaying, setIsPlaying] = useState(false);
   const sequencerRef = useRef<Tone.Sequence | null>(null);
   const stepsRef = useRef<Pattern>(initialPattern);
-  const { startToneContext } = useToneInitializer();
   
   // Memoize updatePatternRef to prevent unnecessary re-renders
   const updatePatternRef = useCallback((newPattern: Pattern) => {
@@ -68,16 +67,21 @@ export function useSequencePlayer(
     };
   }, [bpm, instruments, onStep]);
   
-  // Handle play state with reduced effect dependencies
+  // Handle play state
   useEffect(() => {
     if (!sequencerRef.current) return;
     
     const handlePlayStateChange = async () => {
       try {
         if (isPlaying) {
-          // Initialize audio context if not running
-          const started = await startToneContext();
-          if (!started) return;
+          // Initialize audio context through our AudioManager
+          const audioManager = AudioManager.getInstance();
+          const initialized = await audioManager.initialize();
+          
+          if (!initialized) {
+            console.error("Failed to initialize audio context");
+            return;
+          }
           
           // Start transport and sequencer
           Tone.Transport.start();
@@ -94,16 +98,21 @@ export function useSequencePlayer(
     };
     
     handlePlayStateChange();
-  }, [isPlaying, startToneContext]);
+  }, [isPlaying]);
 
   // Toggle play with improved error handling
   const togglePlay = async () => {
     try {
       console.log("Toggle play requested, current state:", !isPlaying);
       
-      // Initialize audio context on first click (required by browsers)
-      const started = await startToneContext();
-      if (!started) return;
+      // Initialize audio context through our AudioManager
+      const audioManager = AudioManager.getInstance();
+      const initialized = await audioManager.initialize();
+      
+      if (!initialized) {
+        console.error("Failed to initialize audio context");
+        return;
+      }
       
       setIsPlaying(prev => !prev);
     } catch (error) {

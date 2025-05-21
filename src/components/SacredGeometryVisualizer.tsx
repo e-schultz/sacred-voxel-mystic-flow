@@ -4,17 +4,15 @@ import { sacredGeometryMessages } from '../constants/messages';
 import { useP5Sketch } from '../hooks/useP5Sketch';
 import MessageDisplay from './MessageDisplay';
 import { SacredGeometryVisualizerProps } from '../types/geometryTypes';
+import { useAudioManager } from '../hooks/useAudioManager';
 
-const SacredGeometryVisualizer: React.FC<SacredGeometryVisualizerProps> = ({ audioData }) => {
+const SacredGeometryVisualizer: React.FC<SacredGeometryVisualizerProps> = () => {
   const canvasRef = useRef<HTMLDivElement>(null);
   const [currentMessage, setCurrentMessage] = useState(sacredGeometryMessages[0]);
   const messageIndexRef = useRef(0);
-  const audioDataRef = useRef<Uint8Array>(audioData);
   
-  // Update audioDataRef when audioData prop changes
-  React.useEffect(() => {
-    audioDataRef.current = audioData;
-  }, [audioData]);
+  // Use our new AudioManager hook instead of direct props
+  const { audioData } = useAudioManager();
   
   // Handle message changes
   const handleMessageChange = () => {
@@ -25,7 +23,7 @@ const SacredGeometryVisualizer: React.FC<SacredGeometryVisualizerProps> = ({ aud
   // Initialize P5
   useP5Sketch({
     containerRef: canvasRef,
-    audioDataRef: audioDataRef,
+    audioData,
     onMessageChange: handleMessageChange,
   });
 

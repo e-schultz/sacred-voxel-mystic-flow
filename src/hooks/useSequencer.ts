@@ -1,16 +1,18 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { Pattern } from '@/types/sequencerTypes';
-import { useAudioAnalyzer } from './useAudioAnalyzer';
 import { createInstruments, disposeInstruments } from '@/utils/createInstruments';
 import { useSequencePlayer } from './useSequencePlayer';
 
-export const useSequencer = (initialPattern: Pattern, bpm: number, onAudioAnalysis: (data: Uint8Array) => void) => {
+export const useSequencer = (
+  initialPattern: Pattern, 
+  bpm: number, 
+  onStepTriggered: () => void
+) => {
   const [steps, setSteps] = useState<Pattern>(initialPattern);
   const [currentStep, setCurrentStep] = useState(0);
   
   const instrumentsRef = useRef(createInstruments());
-  const { updateAnalyzer } = useAudioAnalyzer(onAudioAnalysis);
   
   const { isPlaying, togglePlay, updatePatternRef } = useSequencePlayer(
     initialPattern,
@@ -18,7 +20,7 @@ export const useSequencer = (initialPattern: Pattern, bpm: number, onAudioAnalys
     instrumentsRef.current,
     (step) => {
       setCurrentStep(step);
-      updateAnalyzer();
+      onStepTriggered();
     }
   );
   

@@ -7,16 +7,17 @@ import useSequencer from '@/hooks/useSequencer';
 import { initialPattern } from '@/constants/sequencerPatterns';
 import SequencerGrid from './sequencer/SequencerGrid';
 import TransportControls from './sequencer/TransportControls';
-import { StepSequencerProps } from '@/types/sequencerTypes';
+import AudioManager from '@/services/AudioManager';
 
-const StepSequencer: React.FC<StepSequencerProps> = ({ onAudioAnalysis }) => {
+const StepSequencer: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [bpm, setBpm] = useState(120);
   
-  // Memoize the audio analysis callback to prevent unnecessary re-renders
-  const handleAudioAnalysis = useCallback((data: Uint8Array) => {
-    onAudioAnalysis(data);
-  }, [onAudioAnalysis]);
+  // When a sequencer step triggers, we'll have it manually update the audio manager
+  const handleStepTrigger = useCallback(() => {
+    const audioManager = AudioManager.getInstance();
+    audioManager.triggerAnalysisUpdate();
+  }, []);
   
   const { 
     steps, 
@@ -24,7 +25,7 @@ const StepSequencer: React.FC<StepSequencerProps> = ({ onAudioAnalysis }) => {
     isPlaying, 
     togglePlay, 
     toggleStep 
-  } = useSequencer(initialPattern, bpm, handleAudioAnalysis);
+  } = useSequencer(initialPattern, bpm, handleStepTrigger);
 
   return (
     <div className="fixed bottom-0 left-0 z-20 w-full bg-black/80 border-t border-white/10 backdrop-blur-md">

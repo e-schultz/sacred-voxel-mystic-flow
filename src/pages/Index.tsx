@@ -1,19 +1,31 @@
 
 import SacredGeometryVisualizer from "@/components/SacredGeometryVisualizer";
 import StepSequencer from "@/components/StepSequencer";
-import { useState } from "react";
+import React, { useEffect } from "react";
+import AudioManager from "@/services/AudioManager";
 
 const Index = () => {
-  const [audioData, setAudioData] = useState<Uint8Array>(new Uint8Array(128));
-
-  const handleAudioAnalysis = (data: Uint8Array) => {
-    setAudioData(data);
-  };
+  // Pre-initialize AudioManager when the page loads
+  useEffect(() => {
+    // Initialize the audio manager and start analysis
+    const audioManager = AudioManager.getInstance();
+    audioManager.initialize().then(success => {
+      if (success) {
+        audioManager.startAnalysis();
+      }
+    });
+    
+    // Cleanup function
+    return () => {
+      // We don't dispose the singleton here, just stop analysis if needed
+      // audioManager.stopAnalysis();
+    };
+  }, []);
 
   return (
     <div className="min-h-screen w-full bg-black">
-      <SacredGeometryVisualizer audioData={audioData} />
-      <StepSequencer onAudioAnalysis={handleAudioAnalysis} />
+      <SacredGeometryVisualizer />
+      <StepSequencer />
     </div>
   );
 };
