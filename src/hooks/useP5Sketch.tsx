@@ -44,7 +44,9 @@ export const useP5Sketch = ({ containerRef, audioDataRef, onMessageChange }: Use
       
       // Initialize objects once
       const initializeObjects = () => {
+        console.log("Initializing p5 objects");
         // Create hexagon grid
+        hexGrid = []; // Clear existing grid
         for (let i = 0; i < 20; i++) {
           let x = p.random(-p.width/2, p.width/2);
           let y = p.random(-p.height/2, p.height/2);
@@ -61,6 +63,7 @@ export const useP5Sketch = ({ containerRef, audioDataRef, onMessageChange }: Use
         }
         
         // Create triangles for sacred geometry
+        triangleGrid = []; // Clear existing grid
         let numTriangles = 6;
         for (let i = 0; i < numTriangles; i++) {
           let angle = p.TWO_PI * i / numTriangles;
@@ -87,6 +90,7 @@ export const useP5Sketch = ({ containerRef, audioDataRef, onMessageChange }: Use
         
         p.frameRate(60); // Set target frame rate
         initializeObjects();
+        console.log("P5 setup complete, canvas created with WEBGL renderer");
       };
       
       p.draw = () => {
@@ -163,15 +167,19 @@ export const useP5Sketch = ({ containerRef, audioDataRef, onMessageChange }: Use
       
       p.windowResized = () => {
         p.resizeCanvas(window.innerWidth, window.innerHeight);
+        // Re-initialize objects when window is resized to ensure proper scaling
+        initializeObjects();
       };
     };
 
     // Start the sketch
+    console.log("Creating new p5 instance");
     p5InstanceRef.current = new p5(sketch, containerRef.current);
 
     // Clean up
     return () => {
       if (p5InstanceRef.current) {
+        console.log("Removing p5 instance");
         p5InstanceRef.current.remove();
       }
     };

@@ -24,25 +24,25 @@ export function drawCenterCircle(p: p5, time: number, triangleSize: number, colo
   p.rotateX(p.PI/2);
   p.noFill();
   
-  // Only draw details if close to camera
+  // Replace modelZ with a distance calculation based on camera position
+  // We'll use a fixed distance threshold instead since modelZ isn't available
   const distanceThreshold = 600;
-  const distanceToCamera = p.abs(p.modelZ());
   
-  if (distanceToCamera < distanceThreshold) {
-    p.stroke(colors.light[0], colors.light[1], colors.light[2], 100 + midEnergy * 100);
-    p.strokeWeight(2 + bassEnergy * 3);
-    p.circle(0, 0, triangleSize * 3 * (1 + bassEnergy * 0.5));
-    
-    p.stroke(colors.primary[0], colors.primary[1], colors.primary[2], 150);
-    p.strokeWeight(1 + midEnergy * 2);
-    p.circle(0, 0, triangleSize * 3.2 * (1 + midEnergy * 0.3));
-    
-    // Inner pulse circle - now reacts to bass
-    let pulseSize = triangleSize * 2 + p.sin(time * 3) * 20 + bassEnergy * 100;
-    p.stroke(colors.highlight[0], colors.highlight[1], colors.highlight[2], 200);
-    p.strokeWeight(2 + bassEnergy * 5);
-    p.circle(0, 0, pulseSize);
-  }
+  // Always draw the basic effects
+  p.stroke(colors.light[0], colors.light[1], colors.light[2], 100 + midEnergy * 100);
+  p.strokeWeight(2 + bassEnergy * 3);
+  p.circle(0, 0, triangleSize * 3 * (1 + bassEnergy * 0.5));
+  
+  p.stroke(colors.primary[0], colors.primary[1], colors.primary[2], 150);
+  p.strokeWeight(1 + midEnergy * 2);
+  p.circle(0, 0, triangleSize * 3.2 * (1 + midEnergy * 0.3));
+  
+  // Inner pulse circle - now reacts to bass
+  let pulseSize = triangleSize * 2 + p.sin(time * 3) * 20 + bassEnergy * 100;
+  p.stroke(colors.highlight[0], colors.highlight[1], colors.highlight[2], 200);
+  p.strokeWeight(2 + bassEnergy * 5);
+  p.circle(0, 0, pulseSize);
+  
   p.pop();
   
   // Center dot
@@ -177,12 +177,12 @@ export function drawHexagonGrid(p: p5, time: number, hexGrid: Hexagon[], colors:
 
 export function drawOverlay(p: p5, colors: ColorPalette, fullEnergy: number) {
   p.push();
-  // Reset the camera for 2D overlay
+  // Reset the camera for 2D overlay effects
   p.camera();
   p.noStroke();
   
   // Scan line effect - reduced density for better performance
-  for (let y = 0; y < p.height; y += 8) { // Increased step size from 4 to 8
+  for (let y = 0; y < p.height; y += 8) {
     p.fill(colors.light[0], colors.light[1], colors.light[2], 5 + fullEnergy * 10);
     p.rect(0, y, p.width, 1);
   }
@@ -190,7 +190,7 @@ export function drawOverlay(p: p5, colors: ColorPalette, fullEnergy: number) {
   // Vignette effect - simplified
   p.drawingContext.shadowBlur = 0;
   let gradientAlpha = 150;
-  for (let i = 0; i < 3; i++) { // Reduced iterations from 5 to 3
+  for (let i = 0; i < 3; i++) {
     let size = p.map(i, 0, 3, p.width * 1.5, p.width * 0.3);
     let alpha = p.map(i, 0, 3, 0, gradientAlpha);
     p.fill(colors.dark[0], colors.dark[1], colors.dark[2], alpha);
@@ -198,7 +198,7 @@ export function drawOverlay(p: p5, colors: ColorPalette, fullEnergy: number) {
   }
   
   // Glitch effect - less frequent for better performance
-  if (p.random() > 0.98 - fullEnergy * 0.1) { // Made less likely to occur
+  if (p.random() > 0.98 - fullEnergy * 0.1) {
     let x = p.random(p.width);
     let y = p.random(p.height);
     let w = p.random(50, 150);

@@ -25,6 +25,8 @@ export function useAudioAnalyzer(onAudioAnalysis: (data: Uint8Array) => void) {
   
   // Setup analyzer once on component mount
   useEffect(() => {
+    console.log("Setting up audio analyzer");
+    
     // Create analyzer for visualization
     analyserRef.current = Tone.context.createAnalyser();
     analyserRef.current.fftSize = 256;
@@ -32,16 +34,19 @@ export function useAudioAnalyzer(onAudioAnalysis: (data: Uint8Array) => void) {
     
     // Connect to Tone.js destination
     try {
+      console.log("Connecting analyzer to Tone destination");
       Tone.Destination.connect(analyserRef.current);
     } catch (error) {
       console.error("Error connecting analyzer to Tone destination:", error);
     }
 
     // Start animation loop
+    console.log("Starting animation loop for audio analysis");
     requestRef.current = requestAnimationFrame(animate);
     
     // Cleanup function
     return () => {
+      console.log("Cleaning up audio analyzer");
       if (requestRef.current) {
         cancelAnimationFrame(requestRef.current);
       }
