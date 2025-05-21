@@ -1,73 +1,87 @@
-# Welcome to your Lovable project
 
-## Project info
+# Sacred Geometry Visualizer
 
-**URL**: https://lovable.dev/projects/e1827325-62e2-480e-86dc-449047f39217
+A mesmerizing sacred geometry visualization that combines p5.js, React, and mystical patterns with inspirational messages.
 
-## How can I edit this code?
+## About
 
-There are several ways of editing your application.
+This visualizer creates an interactive 3D sacred geometry experience with rotating hexagons, triangular patterns, and pulsing elements, all synchronized with inspiring messages that change periodically.
 
-**Use Lovable**
+## Mantra Philosophy
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/e1827325-62e2-480e-86dc-449047f39217) and start prompting.
+> THE ONLY WAY OUT IS THROUGH  
+> MIGHT AS WELL DANCE WHILE DOING IT  
+> JOY IS AN ACT OF RESISTANCE  
+> WELCOME, SELF-DANCER  
+> FRICTION CAN BE USEFUL  
+> FEEL WHAT YOU'RE DANCING AGAINST  
+> PERFORMING REFUSAL  
+> REFUSAL TO COLLAPSE INTO LEGIBILITY  
+> AND DOING IT WITH RHYTHM  
 
-Changes made via Lovable will be committed automatically to this repo.
+This project represents a "Tripartite Invocation" - combining visual patterns, inspirational text, and interactive elements to create a meditative, reflective experience.
 
-**Use your preferred IDE**
+## Technical Details
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+- Built with **React**, **TypeScript**, and **Vite**
+- Visualization created using **p5.js** in 3D WEBGL mode
+- Responsive design that adapts to different screen sizes
+- Custom geometric algorithms for sacred geometry patterns
+- Animated transitions between visual states
+- Interactive elements that respond to user clicks
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+## Aesthetic Design
 
-Follow these steps:
+The visual style combines:
+- Mystical sacred geometry patterns
+- Cyberpunk/vaporwave color palette
+- Minimalist typography
+- Subtle animation effects (pulse, rotation, glitch)
+- Voxel-style extrusions for depth
+
+## Color Palette
+
+- Background: Deep space black with subtle purple tint
+- Primary: Magenta/purple tones
+- Secondary: Cyan/blue accent colors
+- Highlight: Bright pink for emphasis
+- Light: Soft white/blue for outlines
+
+## Resources & References
+
+- [Gemini Generated Content 1](https://gemini.google.com/share/27c16640025c)
+- [Gemini Generated Content 2](https://g.co/gemini/share/69c12d89f8e8)
+- [p5.js Documentation](https://p5js.org/)
+- [Sacred Geometry Principles](https://en.wikipedia.org/wiki/Sacred_geometry)
+
+## Links
+
+- [GitHub Repository](https://github.com/yourusername/sacred-geometry-visualizer)
+- [Live Demo](https://lovable.dev/projects/e1827325-62e2-480e-86dc-449047f39217)
+- [Project Development](https://lovable.dev/projects/e1827325-62e2-480e-86dc-449047f39217)
+
+## How to Use
+
+Click anywhere on the visualization to cycle through the inspirational messages. The sacred geometry patterns will continuously evolve and transform over time.
+
+## Installation
+
+To run this project locally:
 
 ```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+# Clone the repository
+git clone <repo-url>
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+# Navigate to project directory
+cd sacred-geometry-visualizer
 
-# Step 3: Install the necessary dependencies.
-npm i
+# Install dependencies
+npm install
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
+# Start development server
 npm run dev
 ```
 
-**Edit a file directly in GitHub**
+## License
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
-
-**Use GitHub Codespaces**
-
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
-
-## What technologies are used for this project?
-
-This project is built with:
-
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
-
-## How can I deploy this project?
-
-Simply open [Lovable](https://lovable.dev/projects/e1827325-62e2-480e-86dc-449047f39217) and click on Share -> Publish.
-
-## Can I connect a custom domain to my Lovable project?
-
-Yes, you can!
-
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
-
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/tips-tricks/custom-domain#step-by-step-guide)
+MIT
