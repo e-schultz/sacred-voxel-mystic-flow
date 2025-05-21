@@ -21,6 +21,14 @@ const StepSequencer: React.FC<StepSequencerProps> = ({ onAudioAnalysis }) => {
     toggleStep 
   } = useSequencer(initialPattern, bpm, onAudioAnalysis);
 
+  // Add an effect to ensure proper cleanup and setup
+  React.useEffect(() => {
+    console.log("StepSequencer mounted");
+    return () => {
+      console.log("StepSequencer unmounted");
+    };
+  }, []);
+
   return (
     <div className="fixed bottom-0 left-0 z-20 w-full bg-black/80 border-t border-white/10 backdrop-blur-md">
       <Collapsible open={isOpen} onOpenChange={setIsOpen}>

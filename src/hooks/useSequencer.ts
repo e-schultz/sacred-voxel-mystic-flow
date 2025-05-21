@@ -12,6 +12,7 @@ export const useSequencer = (initialPattern: Pattern, bpm: number, onAudioAnalys
   const analyserRef = useRef<AnalyserNode | null>(null);
   const dataArrayRef = useRef<Uint8Array>(new Uint8Array(128));
   const stepsRef = useRef(steps);
+  const toneStartedRef = useRef(false);
 
   // Keep stepsRef updated when steps changes
   useEffect(() => {
@@ -148,21 +149,40 @@ export const useSequencer = (initialPattern: Pattern, bpm: number, onAudioAnalys
     // Start transport with lower default BPM for Plastikman-like pace
     Tone.Transport.bpm.value = bpm;
     
+    // Ensure Tone.js is started on component mount
+    if (Tone.context.state !== 'running') {
+      console.log("Starting Tone.js context on mount");
+      Tone.start().then(() => {
+        toneStartedRef.current = true;
+        console.log("Tone.js context started successfully");
+      }).catch(err => {
+        console.error("Error starting Tone.js context:", err);
+      });
+    } else {
+      toneStartedRef.current = true;
+      console.log("Tone.js context already running");
+    }
+    
     return () => {
       // Clean up
+      console.log("Cleaning up sequencer");
       if (sequencerRef.current) {
         sequencerRef.current.dispose();
       }
+      
+      // Stop transport before disposing instruments
+      Tone.Transport.stop();
+      
       instrumentsRef.current.forEach(instrument => {
         // Fix the type checking issue by removing instanceof check
         if ('dispose' in instrument.synth && typeof instrument.synth.dispose === 'function') {
           instrument.synth.dispose();
         }
       });
+      
       if (analyserRef.current) {
         Tone.Destination.disconnect(analyserRef.current);
       }
-      Tone.Transport.stop();
     };
   }, [bpm, onAudioAnalysis]);
 
@@ -173,23 +193,52 @@ export const useSequencer = (initialPattern: Pattern, bpm: number, onAudioAnalys
 
   // Handle play state
   useEffect(() => {
-    if (isPlaying) {
-      if (Tone.context.state !== 'running') {
-        Tone.context.resume();
+    const handlePlayStateChange = async () => {
+      if (isPlaying) {
+        // Initialize audio context if not running
+        if (Tone.context.state !== 'running') {
+          console.log("Starting Tone.js on play");
+          try {
+            await Tone.start();
+            toneStartedRef.current = true;
+            console.log("Tone.js started successfully on play");
+          } catch (err) {
+            console.error("Error starting Tone.js on play:", err);
+            return; // Don't proceed if we couldn't start
+          }
+        }
+        
+        // Start transport and sequencer
+        Tone.Transport.start();
+        if (sequencerRef.current) {
+          sequencerRef.current.start(0);
+          console.log("Sequencer started");
+        }
+      } else {
+        // Just pause transport, don't stop sequencer to preserve position
+        Tone.Transport.pause();
+        console.log("Transport paused");
       }
-      Tone.Transport.start();
-      sequencerRef.current?.start(0);
-    } else {
-      Tone.Transport.pause();
-      // Don't stop the sequencer to preserve position
-    }
+    };
+    
+    handlePlayStateChange();
   }, [isPlaying]);
 
   const togglePlay = async () => {
+    console.log("Toggle play requested, current state:", !isPlaying);
+    
     // Initialize audio context on first click (required by browsers)
     if (Tone.context.state !== 'running') {
-      await Tone.start();
+      console.log("Starting Tone.js on toggle");
+      try {
+        await Tone.start();
+        toneStartedRef.current = true;
+        console.log("Tone.js started successfully on toggle");
+      } catch (err) {
+        console.error("Error starting Tone.js on toggle:", err);
+      }
     }
+    
     setIsPlaying(!isPlaying);
   };
 
