@@ -1,4 +1,3 @@
-
 import React, { useEffect, useRef, useState } from 'react';
 import p5 from 'p5';
 import StepSequencer from './StepSequencer';
@@ -34,16 +33,20 @@ interface Triangle {
   phase: number;
 }
 
-const SacredGeometryVisualizer: React.FC = () => {
+interface SacredGeometryVisualizerProps {
+  audioData: Uint8Array;
+}
+
+const SacredGeometryVisualizer: React.FC<SacredGeometryVisualizerProps> = ({ audioData }) => {
   const canvasRef = useRef<HTMLDivElement>(null);
   const [currentMessage, setCurrentMessage] = useState(messages[0]);
   const messageIndexRef = useRef(0);
-  const audioDataRef = useRef<Uint8Array>(new Uint8Array(128).fill(0));
+  const audioDataRef = useRef<Uint8Array>(audioData);
   
-  // Audio reactivity effects
-  const handleAudioAnalysis = (data: Uint8Array) => {
-    audioDataRef.current = data;
-  };
+  // Update audioDataRef when audioData prop changes
+  useEffect(() => {
+    audioDataRef.current = audioData;
+  }, [audioData]);
   
   useEffect(() => {
     if (!canvasRef.current) return;
@@ -201,7 +204,7 @@ const SacredGeometryVisualizer: React.FC = () => {
   );
 };
 
-// Helper functions for drawing, modified to use audio reactivity
+// Helper functions for drawing
 function drawCenterCircle(p: p5, time: number, triangleSize: number, colors: any, bassEnergy: number, midEnergy: number) {
   p.push();
   p.rotateX(p.PI/2);
@@ -268,7 +271,6 @@ function drawTriangularPattern(p: p5, time: number, triangleGrid: Triangle[], co
 }
 
 function drawRadialLines(p: p5, time: number, colors: any, highEnergy: number) {
-  // Draw radial lines emanating from center - affected by high frequencies
   p.push();
   p.stroke(colors.secondary[0], colors.secondary[1], colors.secondary[2], 100 + highEnergy * 100);
   p.strokeWeight(1 + highEnergy * 2);
