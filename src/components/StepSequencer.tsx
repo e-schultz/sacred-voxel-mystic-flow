@@ -17,19 +17,22 @@ interface Instrument {
 const StepSequencer: React.FC<StepSequencerProps> = ({ onAudioAnalysis }) => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [bpm, setBpm] = useState(120);
-  // Create a pre-programmed pattern
-  const [steps, setSteps] = useState([
+  
+  // Define the initial pattern first
+  const initialPattern = [
     // Pre-programmed minimal techno pattern
     [true, false, false, false, true, false, false, false, true, false, false, false, true, false, false, false], // Kick
     [false, false, true, false, false, false, true, false, false, false, true, false, false, false, true, true], // Hi-hat
     [false, false, false, false, true, false, false, false, false, false, false, false, true, false, false, false], // Percussion
     [true, false, false, false, false, false, false, true, false, false, true, false, false, false, false, false], // Bass
-  ].map((row, i) => row.map((active, j) => steps[j]?.[i] ?? active)));
+  ];
   
+  // Create a pre-programmed pattern
+  const [steps, setSteps] = useState(initialPattern);
   const [currentStep, setCurrentStep] = useState(0);
   
   // Refs to persist values without re-renders
-  const sequencerRef = useRef<any>(null);
+  const sequencerRef = useRef<Tone.Sequence | null>(null);
   const instrumentsRef = useRef<Instrument[]>([]);
   const analyserRef = useRef<AnalyserNode | null>(null);
   const dataArrayRef = useRef<Uint8Array>(new Uint8Array(128));
@@ -129,7 +132,8 @@ const StepSequencer: React.FC<StepSequencerProps> = ({ onAudioAnalysis }) => {
         sequencerRef.current.dispose();
       }
       instrumentsRef.current.forEach(instrument => {
-        if (instrument.synth instanceof Tone.Instrument) {
+        // Fix the type checking issue by removing instanceof check
+        if ('dispose' in instrument.synth && typeof instrument.synth.dispose === 'function') {
           instrument.synth.dispose();
         }
       });
