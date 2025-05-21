@@ -1,6 +1,6 @@
-
 import React, { useEffect, useRef, useState } from 'react';
 import p5 from 'p5';
+import AudioManager from '@/services/AudioManager';
 import StepSequencer from './StepSequencer';
 
 const messages = [
@@ -34,16 +34,46 @@ interface Triangle {
   phase: number;
 }
 
+interface AudioData {
+  audioData: Uint8Array;
+  bassEnergy: number;
+  midEnergy: number;
+  highEnergy: number;
+  fullEnergy: number;
+}
+
 const SacredGeometryVisualizer: React.FC = () => {
   const canvasRef = useRef<HTMLDivElement>(null);
   const [currentMessage, setCurrentMessage] = useState(messages[0]);
   const messageIndexRef = useRef(0);
-  const audioDataRef = useRef<Uint8Array>(new Uint8Array(128).fill(0));
+  const audioDataRef = useRef<AudioData>({
+    audioData: new Uint8Array(128).fill(0),
+    bassEnergy: 0,
+    midEnergy: 0,
+    highEnergy: 0,
+    fullEnergy: 0
+  });
   
-  // Audio reactivity effects
-  const handleAudioAnalysis = (data: Uint8Array) => {
-    audioDataRef.current = data;
-  };
+  // Initialize AudioManager and subscribe to audio data updates
+  useEffect(() => {
+    const audioManager = AudioManager.getInstance();
+    
+    // Initialize audio system
+    audioManager.initialize().then(() => {
+      audioManager.startAnalysis();
+    });
+    
+    // Subscribe to audio data updates
+    const subscription = audioManager.audioData$.subscribe(data => {
+      audioDataRef.current = data;
+    });
+    
+    return () => {
+      // Clean up on unmount
+      subscription.unsubscribe();
+      audioManager.stopAnalysis();
+    };
+  }, []);
   
   useEffect(() => {
     if (!canvasRef.current) return;
@@ -102,14 +132,8 @@ const SacredGeometryVisualizer: React.FC = () => {
       p.draw = () => {
         p.background(colors.bg);
         
-        // Get audio data for visualization
-        const audioData = audioDataRef.current;
-        
-        // Calculate audio energy for different frequency bands
-        const bassEnergy = getAverageEnergy(audioData, 0, 10);
-        const midEnergy = getAverageEnergy(audioData, 10, 30);
-        const highEnergy = getAverageEnergy(audioData, 30, 60);
-        const fullEnergy = getAverageEnergy(audioData, 0, 60);
+        // Get audio data from audioDataRef
+        const { bassEnergy, midEnergy, highEnergy, fullEnergy } = audioDataRef.current;
         
         // Global lighting
         p.ambientLight(40 + highEnergy * 30, 40 + midEnergy * 20, 60 + bassEnergy * 40);
@@ -165,16 +189,6 @@ const SacredGeometryVisualizer: React.FC = () => {
       p.windowResized = () => {
         p.resizeCanvas(window.innerWidth, window.innerHeight);
       };
-      
-      // Helper function to calculate average energy in a frequency range
-      function getAverageEnergy(data: Uint8Array, startBin: number, endBin: number): number {
-        let sum = 0;
-        for (let i = startBin; i < endBin && i < data.length; i++) {
-          sum += data[i];
-        }
-        // Normalize between 0 and 1
-        return sum / ((endBin - startBin) * 255);
-      }
     };
 
     // Start the sketch
@@ -196,12 +210,12 @@ const SacredGeometryVisualizer: React.FC = () => {
         </div>
       </div>
       
-      <StepSequencer onAudioAnalysis={handleAudioAnalysis} />
+      <StepSequencer />
     </div>
   );
 };
 
-// Helper functions for drawing, modified to use audio reactivity
+// Helper functions for drawing, modified to use audio reactivity - keeping these the same
 function drawCenterCircle(p: p5, time: number, triangleSize: number, colors: any, bassEnergy: number, midEnergy: number) {
   p.push();
   p.rotateX(p.PI/2);

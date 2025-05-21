@@ -4,17 +4,9 @@ import { Play, Pause, Music, ChevronDown, ChevronUp } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import AudioManager from '@/services/AudioManager';
 
-interface StepSequencerProps {
-  onAudioAnalysis: (data: Uint8Array) => void;
-}
-
-interface Instrument {
-  synth: Tone.Synth<Tone.SynthOptions> | Tone.NoiseSynth | Tone.MembraneSynth | Tone.MetalSynth | Tone.MonoSynth;
-  triggerAttackRelease: (note: string | number, duration: string | number, time?: number) => void;
-}
-
-const StepSequencer: React.FC<StepSequencerProps> = ({ onAudioAnalysis }) => {
+const StepSequencer: React.FC = () => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [bpm, setBpm] = useState(120);
   const [isOpen, setIsOpen] = useState(false);
@@ -34,10 +26,9 @@ const StepSequencer: React.FC<StepSequencerProps> = ({ onAudioAnalysis }) => {
   
   // Refs to persist values without re-renders
   const sequencerRef = useRef<Tone.Sequence | null>(null);
-  const instrumentsRef = useRef<Instrument[]>([]);
-  const analyserRef = useRef<AnalyserNode | null>(null);
-  const dataArrayRef = useRef<Uint8Array>(new Uint8Array(128));
+  const instrumentsRef = useRef<any[]>([]);
   const stepsRef = useRef(steps);
+  const audioManagerRef = useRef(AudioManager.getInstance());
 
   // Keep stepsRef updated when steps changes
   useEffect(() => {
@@ -112,27 +103,25 @@ const StepSequencer: React.FC<StepSequencerProps> = ({ onAudioAnalysis }) => {
     instrumentsRef.current = [
       { 
         synth: kick,
-        triggerAttackRelease: (note, duration, time) => kick.triggerAttackRelease(note, duration, time)
+        triggerAttackRelease: (note: string | number, duration: string | number, time?: number) => kick.triggerAttackRelease(note, duration, time)
       },
       {
         synth: hihat, 
-        triggerAttackRelease: (_, duration, time) => hihat.triggerAttackRelease(duration, time)
+        triggerAttackRelease: (_: string | number, duration: string | number, time?: number) => hihat.triggerAttackRelease(duration, time)
       },
       {
         synth: perc,
-        triggerAttackRelease: (_, duration, time) => perc.triggerAttackRelease(duration, time)
+        triggerAttackRelease: (_: string | number, duration: string | number, time?: number) => perc.triggerAttackRelease(duration, time)
       },
       {
         synth: bass,
-        triggerAttackRelease: (note, duration, time) => bass.triggerAttackRelease(note, duration, time)
+        triggerAttackRelease: (note: string | number, duration: string | number, time?: number) => bass.triggerAttackRelease(note, duration, time)
       }
     ];
 
-    // Create analyzer for visualization
-    analyserRef.current = Tone.context.createAnalyser();
-    analyserRef.current.fftSize = 256;
-    dataArrayRef.current = new Uint8Array(analyserRef.current.frequencyBinCount);
-    Tone.Destination.connect(analyserRef.current);
+    // Initialize the AudioManager
+    const audioManager = audioManagerRef.current;
+    audioManager.initialize();
 
     // Set up sequencer
     sequencerRef.current = new Tone.Sequence((time, step) => {
@@ -164,11 +153,8 @@ const StepSequencer: React.FC<StepSequencerProps> = ({ onAudioAnalysis }) => {
         }
       });
       
-      // Update analyzer data for visualization
-      if (analyserRef.current) {
-        analyserRef.current.getByteFrequencyData(dataArrayRef.current);
-        onAudioAnalysis(dataArrayRef.current);
-      }
+      // Trigger audio analysis update
+      audioManager.triggerAnalysisUpdate();
     }, Array.from({ length: 16 }, (_, i) => i), "16n");
 
     // Start transport with lower default BPM for Plastikman-like pace
@@ -180,14 +166,10 @@ const StepSequencer: React.FC<StepSequencerProps> = ({ onAudioAnalysis }) => {
         sequencerRef.current.dispose();
       }
       instrumentsRef.current.forEach(instrument => {
-        // Fix the type checking issue by removing instanceof check
         if ('dispose' in instrument.synth && typeof instrument.synth.dispose === 'function') {
           instrument.synth.dispose();
         }
       });
-      if (analyserRef.current) {
-        Tone.Destination.disconnect(analyserRef.current);
-      }
       Tone.Transport.stop();
     };
   }, []);
@@ -205,9 +187,15 @@ const StepSequencer: React.FC<StepSequencerProps> = ({ onAudioAnalysis }) => {
       }
       Tone.Transport.start();
       sequencerRef.current?.start(0);
+      
+      // Start audio analysis when playing
+      audioManagerRef.current.startAnalysis();
     } else {
       Tone.Transport.pause();
       // Don't stop the sequencer to preserve position
+      
+      // Stop audio analysis when paused
+      audioManagerRef.current.stopAnalysis();
     }
   }, [isPlaying]);
 
