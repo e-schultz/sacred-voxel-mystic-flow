@@ -9,39 +9,73 @@ interface StepSequencerProps {
   onAudioAnalysis: (data: Uint8Array) => void;
 }
 
+interface Instrument {
+  synth: Tone.Synth<Tone.SynthOptions> | Tone.NoiseSynth | Tone.MembraneSynth | Tone.MetalSynth | Tone.MonoSynth;
+  triggerAttackRelease: (note: string | number, duration: string | number, time?: number) => void;
+}
+
 const StepSequencer: React.FC<StepSequencerProps> = ({ onAudioAnalysis }) => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [bpm, setBpm] = useState(120);
-  const [steps, setSteps] = useState(Array(16).fill(Array(4).fill(false)));
+  // Create a pre-programmed pattern
+  const [steps, setSteps] = useState([
+    // Pre-programmed minimal techno pattern
+    [true, false, false, false, true, false, false, false, true, false, false, false, true, false, false, false], // Kick
+    [false, false, true, false, false, false, true, false, false, false, true, false, false, false, true, true], // Hi-hat
+    [false, false, false, false, true, false, false, false, false, false, false, false, true, false, false, false], // Percussion
+    [true, false, false, false, false, false, false, true, false, false, true, false, false, false, false, false], // Bass
+  ].map((row, i) => row.map((active, j) => steps[j]?.[i] ?? active)));
+  
   const [currentStep, setCurrentStep] = useState(0);
   
   // Refs to persist values without re-renders
   const sequencerRef = useRef<any>(null);
-  const synthsRef = useRef<Tone.Synth[]>([]);
+  const instrumentsRef = useRef<Instrument[]>([]);
   const analyserRef = useRef<AnalyserNode | null>(null);
   const dataArrayRef = useRef<Uint8Array>(new Uint8Array(128));
 
   // Initialize Tone.js
   useEffect(() => {
-    // Create synths
-    synthsRef.current = [
-      new Tone.MembraneSynth({
-        volume: -10,
-        envelope: { attack: 0.001, decay: 0.2, sustain: 0 }
-      }).toDestination(), // Kick
-      new Tone.NoiseSynth({
-        volume: -20,
-        envelope: { attack: 0.001, decay: 0.1, sustain: 0 }
-      }).toDestination(), // Hi-hat
-      new Tone.MetalSynth({
-        volume: -25,
-        envelope: { attack: 0.001, decay: 0.1, sustain: 0 }
-      }).toDestination(), // Percussion
-      new Tone.MonoSynth({
-        volume: -20,
-        oscillator: { type: "square" },
-        envelope: { attack: 0.01, decay: 0.1, sustain: 0.2, release: 0.5 }
-      }).toDestination(), // Bass
+    // Create instruments
+    const kick = new Tone.MembraneSynth({
+      volume: -10,
+      envelope: { attack: 0.001, decay: 0.2, sustain: 0 }
+    }).toDestination();
+    
+    const hihat = new Tone.NoiseSynth({
+      volume: -20,
+      envelope: { attack: 0.001, decay: 0.1, sustain: 0 }
+    }).toDestination();
+    
+    const perc = new Tone.MetalSynth({
+      volume: -25,
+      envelope: { attack: 0.001, decay: 0.1, sustain: 0 }
+    }).toDestination();
+    
+    const bass = new Tone.MonoSynth({
+      volume: -20,
+      oscillator: { type: "square" },
+      envelope: { attack: 0.01, decay: 0.1, sustain: 0.2, release: 0.5 }
+    }).toDestination();
+
+    // Create custom wrapper for each instrument
+    instrumentsRef.current = [
+      { 
+        synth: kick,
+        triggerAttackRelease: (note, duration, time) => kick.triggerAttackRelease(note, duration, time)
+      },
+      {
+        synth: hihat, 
+        triggerAttackRelease: (_, duration, time) => hihat.triggerAttackRelease(duration, time)
+      },
+      {
+        synth: perc,
+        triggerAttackRelease: (_, duration, time) => perc.triggerAttackRelease(duration, time)
+      },
+      {
+        synth: bass,
+        triggerAttackRelease: (note, duration, time) => bass.triggerAttackRelease(note, duration, time)
+      }
     ];
 
     // Create analyzer for visualization
@@ -57,23 +91,23 @@ const StepSequencer: React.FC<StepSequencerProps> = ({ onAudioAnalysis }) => {
       // Play sounds for active steps
       steps[step].forEach((isActive, instrumentIndex) => {
         if (isActive) {
-          const synth = synthsRef.current[instrumentIndex];
+          const instrument = instrumentsRef.current[instrumentIndex];
           
           // Different handling for different instruments
           switch(instrumentIndex) {
             case 0: // Kick
-              synth.triggerAttackRelease("C1", "8n", time);
+              instrument.triggerAttackRelease("C1", "8n", time);
               break;
             case 1: // Hi-hat
-              synth.triggerAttackRelease("16n", time);
+              instrument.triggerAttackRelease("16n", "16n", time);
               break;
             case 2: // Percussion
-              synth.triggerAttackRelease("16n", time);
+              instrument.triggerAttackRelease("16n", "16n", time);
               break;
             case 3: // Bass
               const notes = ["C2", "G1", "A1", "F1"];
               const note = notes[Math.floor(step / 4) % notes.length];
-              synth.triggerAttackRelease(note, "8n", time);
+              instrument.triggerAttackRelease(note, "8n", time);
               break;
           }
         }
@@ -94,7 +128,11 @@ const StepSequencer: React.FC<StepSequencerProps> = ({ onAudioAnalysis }) => {
       if (sequencerRef.current) {
         sequencerRef.current.dispose();
       }
-      synthsRef.current.forEach(synth => synth.dispose());
+      instrumentsRef.current.forEach(instrument => {
+        if (instrument.synth instanceof Tone.Instrument) {
+          instrument.synth.dispose();
+        }
+      });
       if (analyserRef.current) {
         Tone.Destination.disconnect(analyserRef.current);
       }
@@ -136,9 +174,7 @@ const StepSequencer: React.FC<StepSequencerProps> = ({ onAudioAnalysis }) => {
 
   const toggleStep = (stepIndex: number, instrumentIndex: number) => {
     const newSteps = [...steps];
-    const stepRow = [...newSteps[stepIndex]];
-    stepRow[instrumentIndex] = !stepRow[instrumentIndex];
-    newSteps[stepIndex] = stepRow;
+    newSteps[stepIndex][instrumentIndex] = !newSteps[stepIndex][instrumentIndex];
     setSteps(newSteps);
   };
 
