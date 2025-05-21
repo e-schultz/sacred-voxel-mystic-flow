@@ -96,6 +96,8 @@ const SacredGeometryVisualizer: React.FC = () => {
       let messageChangeTimer = 0;
       let hexSize = 30;
       let triangleSize = 60;
+      let canvasWidth: number;
+      let canvasHeight: number;
       
       // Add keyPressed function to handle GIF recording
       p.keyPressed = () => {
@@ -107,12 +109,14 @@ const SacredGeometryVisualizer: React.FC = () => {
       };
 
       p.setup = () => {
-        p.createCanvas(window.innerWidth, window.innerHeight, p.WEBGL);
+        canvasWidth = window.innerWidth;
+        canvasHeight = window.innerHeight;
+        p.createCanvas(canvasWidth, canvasHeight, p.WEBGL);
         
         // Create hexagon grid
         for (let i = 0; i < 20; i++) {
-          let x = p.random(-p.width/2, p.width/2);
-          let y = p.random(-p.height/2, p.height/2);
+          let x = p.random(-canvasWidth/2, canvasWidth/2);
+          let y = p.random(-canvasHeight/2, canvasHeight/2);
           let z = p.random(-500, -100);
           let size = p.random(hexSize * 0.5, hexSize * 2);
           let rotSpeed = p.random(0.005, 0.02) * (p.random() > 0.5 ? 1 : -1);
@@ -185,7 +189,7 @@ const SacredGeometryVisualizer: React.FC = () => {
         drawHexagonGrid(p, time, hexGrid, colors, bassEnergy, midEnergy);
         
         // Overlay effect
-        drawOverlay(p, colors, fullEnergy);
+        drawOverlay(p, colors, fullEnergy, canvasWidth, canvasHeight);
       };
 
       p.mousePressed = () => {
@@ -197,7 +201,9 @@ const SacredGeometryVisualizer: React.FC = () => {
       };
       
       p.windowResized = () => {
-        p.resizeCanvas(window.innerWidth, window.innerHeight);
+        canvasWidth = window.innerWidth;
+        canvasHeight = window.innerHeight;
+        p.resizeCanvas(canvasWidth, canvasHeight);
       };
     };
 
@@ -234,7 +240,8 @@ const SacredGeometryVisualizer: React.FC = () => {
   );
 };
 
-// Helper functions for drawing, modified to use audio reactivity - keeping these the same
+// Helper functions for drawing, modified to use audio reactivity
+
 function drawCenterCircle(p: p5, time: number, triangleSize: number, colors: any, bassEnergy: number, midEnergy: number) {
   p.push();
   p.rotateX(p.PI/2);
@@ -385,32 +392,33 @@ function drawHexagonGrid(p: p5, time: number, hexGrid: Hexagon[], colors: any, b
   }
 }
 
-function drawOverlay(p: p5, colors: any, fullEnergy: number) {
+// Update drawOverlay to accept width and height parameters
+function drawOverlay(p: p5, colors: any, fullEnergy: number, width: number, height: number) {
   p.push();
   // Reset the camera for 2D overlay
   p.camera();
   p.noStroke();
   
   // Scan line effect - intensity based on full energy
-  for (let y = 0; y < p.height; y += 4) {
+  for (let y = 0; y < height; y += 4) {
     p.fill(colors.light[0], colors.light[1], colors.light[2], 5 + fullEnergy * 10);
-    p.rect(0, y, p.width, 1);
+    p.rect(0, y, width, 1);
   }
   
   // Vignette effect
   p.drawingContext.shadowBlur = 0;
   let gradientAlpha = 150;
   for (let i = 0; i < 5; i++) {
-    let size = p.map(i, 0, 5, p.width * 1.5, p.width * 0.3);
+    let size = p.map(i, 0, 5, width * 1.5, width * 0.3);
     let alpha = p.map(i, 0, 5, 0, gradientAlpha);
     p.fill(colors.dark[0], colors.dark[1], colors.dark[2], alpha);
-    p.ellipse(p.width/2, p.height/2, size, size);
+    p.ellipse(width/2, height/2, size, size);
   }
   
   // Glitch effect - more likely with high energy
   if (p.random() > 0.97 - fullEnergy * 0.2) {
-    let x = p.random(p.width);
-    let y = p.random(p.height);
+    let x = p.random(width);
+    let y = p.random(height);
     let w = p.random(50, 150);
     let h = p.random(2, 8);
     p.fill(colors.highlight[0], colors.highlight[1], colors.highlight[2], 100 + fullEnergy * 100);
