@@ -1,23 +1,15 @@
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useCallback } from 'react';
 import * as Tone from 'tone';
 
 export function useToneInitializer() {
   const toneStartedRef = useRef(false);
   
   useEffect(() => {
-    // Ensure Tone.js is started on component mount
-    if (Tone.context.state !== 'running') {
-      console.log("Starting Tone.js context on mount");
-      Tone.start().then(() => {
-        toneStartedRef.current = true;
-        console.log("Tone.js context started successfully");
-      }).catch(err => {
-        console.error("Error starting Tone.js context:", err);
-      });
-    } else {
+    // Check if Tone context is already running
+    if (Tone.context.state === 'running') {
       toneStartedRef.current = true;
-      console.log("Tone.js context already running");
+      console.log("Tone.js context already running on mount");
     }
     
     return () => {
@@ -25,7 +17,7 @@ export function useToneInitializer() {
     };
   }, []);
   
-  const startToneContext = async (): Promise<boolean> => {
+  const startToneContext = useCallback(async (): Promise<boolean> => {
     if (Tone.context.state !== 'running') {
       console.log("Starting Tone.js context");
       try {
@@ -39,10 +31,10 @@ export function useToneInitializer() {
       }
     }
     return true;
-  };
+  }, []);
   
   return {
-    isToneStarted: () => toneStartedRef.current,
+    isToneStarted: useCallback(() => toneStartedRef.current, []),
     startToneContext
   };
 }

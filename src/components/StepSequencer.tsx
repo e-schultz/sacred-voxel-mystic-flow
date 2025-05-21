@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { ChevronDown, ChevronUp } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
@@ -13,21 +13,18 @@ const StepSequencer: React.FC<StepSequencerProps> = ({ onAudioAnalysis }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [bpm, setBpm] = useState(120);
   
+  // Memoize the audio analysis callback to prevent unnecessary re-renders
+  const handleAudioAnalysis = useCallback((data: Uint8Array) => {
+    onAudioAnalysis(data);
+  }, [onAudioAnalysis]);
+  
   const { 
     steps, 
     currentStep, 
     isPlaying, 
     togglePlay, 
     toggleStep 
-  } = useSequencer(initialPattern, bpm, onAudioAnalysis);
-
-  // Add an effect to ensure proper cleanup and setup
-  React.useEffect(() => {
-    console.log("StepSequencer mounted");
-    return () => {
-      console.log("StepSequencer unmounted");
-    };
-  }, []);
+  } = useSequencer(initialPattern, bpm, handleAudioAnalysis);
 
   return (
     <div className="fixed bottom-0 left-0 z-20 w-full bg-black/80 border-t border-white/10 backdrop-blur-md">

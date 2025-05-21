@@ -4,31 +4,45 @@ import { Hexagon, Triangle, ColorPalette } from '../types/geometryTypes';
 
 // Helper function to calculate average energy in a frequency range
 export function getAverageEnergy(data: Uint8Array, startBin: number, endBin: number): number {
+  if (!data || data.length === 0) return 0;
+  
   let sum = 0;
+  let count = 0;
+  
   for (let i = startBin; i < endBin && i < data.length; i++) {
     sum += data[i];
+    count++;
   }
+  
   // Normalize between 0 and 1
-  return sum / ((endBin - startBin) * 255);
+  return count > 0 ? sum / (count * 255) : 0;
 }
 
+// Drawing functions - optimized for performance
 export function drawCenterCircle(p: p5, time: number, triangleSize: number, colors: ColorPalette, bassEnergy: number, midEnergy: number) {
   p.push();
   p.rotateX(p.PI/2);
   p.noFill();
-  p.stroke(colors.light[0], colors.light[1], colors.light[2], 100 + midEnergy * 100);
-  p.strokeWeight(2 + bassEnergy * 3);
-  p.circle(0, 0, triangleSize * 3 * (1 + bassEnergy * 0.5));
   
-  p.stroke(colors.primary[0], colors.primary[1], colors.primary[2], 150);
-  p.strokeWeight(1 + midEnergy * 2);
-  p.circle(0, 0, triangleSize * 3.2 * (1 + midEnergy * 0.3));
+  // Only draw details if close to camera
+  const distanceThreshold = 600;
+  const distanceToCamera = p.abs(p.modelZ());
   
-  // Inner pulse circle - now reacts to bass
-  let pulseSize = triangleSize * 2 + p.sin(time * 3) * 20 + bassEnergy * 100;
-  p.stroke(colors.highlight[0], colors.highlight[1], colors.highlight[2], 200);
-  p.strokeWeight(2 + bassEnergy * 5);
-  p.circle(0, 0, pulseSize);
+  if (distanceToCamera < distanceThreshold) {
+    p.stroke(colors.light[0], colors.light[1], colors.light[2], 100 + midEnergy * 100);
+    p.strokeWeight(2 + bassEnergy * 3);
+    p.circle(0, 0, triangleSize * 3 * (1 + bassEnergy * 0.5));
+    
+    p.stroke(colors.primary[0], colors.primary[1], colors.primary[2], 150);
+    p.strokeWeight(1 + midEnergy * 2);
+    p.circle(0, 0, triangleSize * 3.2 * (1 + midEnergy * 0.3));
+    
+    // Inner pulse circle - now reacts to bass
+    let pulseSize = triangleSize * 2 + p.sin(time * 3) * 20 + bassEnergy * 100;
+    p.stroke(colors.highlight[0], colors.highlight[1], colors.highlight[2], 200);
+    p.strokeWeight(2 + bassEnergy * 5);
+    p.circle(0, 0, pulseSize);
+  }
   p.pop();
   
   // Center dot
@@ -167,24 +181,24 @@ export function drawOverlay(p: p5, colors: ColorPalette, fullEnergy: number) {
   p.camera();
   p.noStroke();
   
-  // Scan line effect - intensity based on full energy
-  for (let y = 0; y < p.height; y += 4) {
+  // Scan line effect - reduced density for better performance
+  for (let y = 0; y < p.height; y += 8) { // Increased step size from 4 to 8
     p.fill(colors.light[0], colors.light[1], colors.light[2], 5 + fullEnergy * 10);
     p.rect(0, y, p.width, 1);
   }
   
-  // Vignette effect
+  // Vignette effect - simplified
   p.drawingContext.shadowBlur = 0;
   let gradientAlpha = 150;
-  for (let i = 0; i < 5; i++) {
-    let size = p.map(i, 0, 5, p.width * 1.5, p.width * 0.3);
-    let alpha = p.map(i, 0, 5, 0, gradientAlpha);
+  for (let i = 0; i < 3; i++) { // Reduced iterations from 5 to 3
+    let size = p.map(i, 0, 3, p.width * 1.5, p.width * 0.3);
+    let alpha = p.map(i, 0, 3, 0, gradientAlpha);
     p.fill(colors.dark[0], colors.dark[1], colors.dark[2], alpha);
     p.ellipse(p.width/2, p.height/2, size, size);
   }
   
-  // Glitch effect - more likely with high energy
-  if (p.random() > 0.97 - fullEnergy * 0.2) {
+  // Glitch effect - less frequent for better performance
+  if (p.random() > 0.98 - fullEnergy * 0.1) { // Made less likely to occur
     let x = p.random(p.width);
     let y = p.random(p.height);
     let w = p.random(50, 150);

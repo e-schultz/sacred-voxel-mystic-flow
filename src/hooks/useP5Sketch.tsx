@@ -19,6 +19,7 @@ interface UseP5SketchProps {
 
 export const useP5Sketch = ({ containerRef, audioDataRef, onMessageChange }: UseP5SketchProps) => {
   const p5InstanceRef = useRef<p5 | null>(null);
+  const frameRateRef = useRef<number>(0);
 
   useEffect(() => {
     if (!containerRef.current) return;
@@ -40,10 +41,9 @@ export const useP5Sketch = ({ containerRef, audioDataRef, onMessageChange }: Use
       let messageChangeTimer = 0;
       let hexSize = 30;
       let triangleSize = 60;
-
-      p.setup = () => {
-        p.createCanvas(window.innerWidth, window.innerHeight, p.WEBGL);
-        
+      
+      // Initialize objects once
+      const initializeObjects = () => {
         // Create hexagon grid
         for (let i = 0; i < 20; i++) {
           let x = p.random(-p.width/2, p.width/2);
@@ -73,8 +73,26 @@ export const useP5Sketch = ({ containerRef, audioDataRef, onMessageChange }: Use
           });
         }
       };
+
+      p.setup = () => {
+        const canvas = p.createCanvas(window.innerWidth, window.innerHeight, p.WEBGL);
+        // Use hardware acceleration if available
+        // @ts-ignore - p5 WebGL renderer has these properties but typing doesn't
+        if (canvas.GL) {
+          // @ts-ignore
+          canvas.GL.getExtension('OES_texture_float');
+          // @ts-ignore
+          canvas.GL.getExtension('WEBGL_color_buffer_float');
+        }
+        
+        p.frameRate(60); // Set target frame rate
+        initializeObjects();
+      };
       
       p.draw = () => {
+        // Measure performance
+        const frameStart = performance.now();
+        
         p.background(colors.bg);
         
         // Get audio data for visualization
@@ -121,11 +139,19 @@ export const useP5Sketch = ({ containerRef, audioDataRef, onMessageChange }: Use
         
         p.pop();
         
-        // Draw hexagon grid
-        drawHexagonGrid(p, time, hexGrid, colors, bassEnergy, midEnergy);
+        // Draw hexagon grid - only visible ones for performance
+        const visibleHexagons = hexGrid.filter(hex => 
+          hex.z + p.sin(time + hex.yOffset) * 50 + bassEnergy * 200 > -500 && 
+          hex.z + p.sin(time + hex.yOffset) * 50 + bassEnergy * 200 < 0
+        );
         
-        // Overlay effect
+        drawHexagonGrid(p, time, visibleHexagons, colors, bassEnergy, midEnergy);
+        
+        // Overlay effect - simplified for performance
         drawOverlay(p, colors, fullEnergy);
+        
+        // Calculate actual frame rate
+        frameRateRef.current = 1000 / (performance.now() - frameStart);
       };
 
       p.mousePressed = () => {
