@@ -46,6 +46,7 @@ const SacredGeometryVisualizer: React.FC = () => {
   const canvasRef = useRef<HTMLDivElement>(null);
   const [currentMessage, setCurrentMessage] = useState(messages[0]);
   const messageIndexRef = useRef(0);
+  const p5InstanceRef = useRef<p5 | null>(null);
   const audioDataRef = useRef<AudioData>({
     audioData: new Uint8Array(128).fill(0),
     bassEnergy: 0,
@@ -95,6 +96,15 @@ const SacredGeometryVisualizer: React.FC = () => {
       let messageChangeTimer = 0;
       let hexSize = 30;
       let triangleSize = 60;
+      
+      // Add keyPressed function to handle GIF recording
+      p.keyPressed = () => {
+        if (p.key === 'g' || p.key === 'G') {
+          console.log('Recording GIF...');
+          p.saveGif('sacred-voxel-mystic', 5);
+        }
+        return false; // Prevent default behavior
+      };
 
       p.setup = () => {
         p.createCanvas(window.innerWidth, window.innerHeight, p.WEBGL);
@@ -191,12 +201,14 @@ const SacredGeometryVisualizer: React.FC = () => {
       };
     };
 
-    // Start the sketch
+    // Start the sketch and store the instance
     const p5Instance = new p5(sketch, canvasRef.current);
+    p5InstanceRef.current = p5Instance;
 
     // Clean up
     return () => {
       p5Instance.remove();
+      p5InstanceRef.current = null;
     };
   }, []);
 
@@ -207,6 +219,13 @@ const SacredGeometryVisualizer: React.FC = () => {
       <div className="z-10 fixed bottom-20 left-0 w-full text-center pointer-events-none">
         <div className="inline-block p-4 bg-black/50 border border-white/30 uppercase tracking-wider animate-pulse-slow">
           <span className="font-mono text-white/70 text-lg">{currentMessage}</span>
+        </div>
+      </div>
+      
+      {/* Add instructions for recording GIF */}
+      <div className="z-10 fixed top-4 left-0 w-full text-center pointer-events-none">
+        <div className="inline-block px-3 py-1 bg-black/40 rounded-md">
+          <span className="font-mono text-white/60 text-sm">Press 'G' to record a 5-second GIF</span>
         </div>
       </div>
       
