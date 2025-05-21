@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import * as Tone from 'tone';
 import { Play, Pause, Music } from 'lucide-react';
@@ -36,6 +35,12 @@ const StepSequencer: React.FC<StepSequencerProps> = ({ onAudioAnalysis }) => {
   const instrumentsRef = useRef<Instrument[]>([]);
   const analyserRef = useRef<AnalyserNode | null>(null);
   const dataArrayRef = useRef<Uint8Array>(new Uint8Array(128));
+  const stepsRef = useRef(steps);
+
+  // Keep stepsRef updated when steps changes
+  useEffect(() => {
+    stepsRef.current = steps;
+  }, [steps]);
 
   // Initialize Tone.js
   useEffect(() => {
@@ -91,8 +96,8 @@ const StepSequencer: React.FC<StepSequencerProps> = ({ onAudioAnalysis }) => {
     sequencerRef.current = new Tone.Sequence((time, step) => {
       setCurrentStep(step);
       
-      // Play sounds for active steps
-      steps.forEach((instrumentSteps, instrumentIndex) => {
+      // Play sounds for active steps - use stepsRef.current to always get the latest pattern
+      stepsRef.current.forEach((instrumentSteps, instrumentIndex) => {
         if (instrumentSteps[step]) {
           const instrument = instrumentsRef.current[instrumentIndex];
           
@@ -102,10 +107,10 @@ const StepSequencer: React.FC<StepSequencerProps> = ({ onAudioAnalysis }) => {
               instrument.triggerAttackRelease("C1", "8n", time);
               break;
             case 1: // Hi-hat
-              instrument.triggerAttackRelease("16n", "16n", time);
+              instrument.triggerAttackRelease("16n", time);
               break;
             case 2: // Percussion
-              instrument.triggerAttackRelease("16n", "16n", time);
+              instrument.triggerAttackRelease("16n", time);
               break;
             case 3: // Bass
               const notes = ["C2", "G1", "A1", "F1"];
@@ -143,11 +148,6 @@ const StepSequencer: React.FC<StepSequencerProps> = ({ onAudioAnalysis }) => {
       Tone.Transport.stop();
     };
   }, []);
-
-  // Update when steps change
-  useEffect(() => {
-    // No need to recreate sequence, just update the internal state
-  }, [steps]);
 
   // Update when BPM changes
   useEffect(() => {
@@ -190,12 +190,15 @@ const StepSequencer: React.FC<StepSequencerProps> = ({ onAudioAnalysis }) => {
       <div className="max-w-3xl mx-auto">
         <div className="flex items-center justify-between mb-4">
           <Button 
-            variant="outline" 
+            variant="destructive" 
             size="icon"
-            className="w-12 h-12 rounded-full bg-primary/20 hover:bg-primary/40 border-primary/50"
+            className="w-16 h-16 rounded-full border-2 border-white/50 shadow-lg shadow-red-500/20"
             onClick={togglePlay}
           >
-            {isPlaying ? <Pause className="w-6 h-6" /> : <Play className="w-6 h-6" />}
+            {isPlaying ? 
+              <Pause className="w-8 h-8" /> : 
+              <Play className="w-8 h-8 ml-1" />
+            }
           </Button>
           
           <div className="flex items-center space-x-2">
