@@ -7,6 +7,10 @@ A mesmerizing sacred geometry visualization that combines p5.js, React, and myst
 
 This visualizer creates an interactive 3D sacred geometry experience with rotating hexagons, triangular patterns, and pulsing elements, all synchronized with inspiring messages that change periodically.
 
+
+
+<img width="1019" alt="Screenshot 2025-05-21 at 7 22 31 AM" src="https://github.com/user-attachments/assets/935fa620-82cf-4911-85c6-322d9b0557e9" />
+
 ## Mantra Philosophy
 
 > THE ONLY WAY OUT IS THROUGH  
